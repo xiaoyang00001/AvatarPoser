@@ -12,8 +12,8 @@
 import functools
 import torch
 from torch.nn import init
-from human_body_prior.body_model.body_model import BodyModel
 import os
+from utils.body_model_loader import create_body_model
 
 
 def define_Model(opt):
@@ -47,14 +47,14 @@ def define_Model(opt):
 def define_G(opt):
     opt_net = opt['netG']
     net_type = opt_net['net_type']
-    device = torch.device('cuda' if opt['gpu_ids'] else 'cpu')
+    device = torch.device('cuda' if opt['gpu_ids'] and torch.cuda.is_available() else 'cpu')
     support_dir = opt['support_dir']
     subject_gender = "male"
     bm_fname = os.path.join(support_dir, 'body_models/smplh/{}/model.npz'.format(subject_gender))
     dmpl_fname = os.path.join(support_dir, 'body_models/dmpls/{}/model.npz'.format(subject_gender))
     num_betas = 16 # number of body parameters
     num_dmpls = 8 # number of DMPL parameters
-    body_model = BodyModel(bm_fname=bm_fname, num_betas=num_betas, num_dmpls=num_dmpls, dmpl_fname=dmpl_fname).to(device)
+    body_model = create_body_model(bm_fname, dmpl_fname, num_betas=num_betas, num_dmpls=num_dmpls).to(device)
 
 
     if net_type == 'AvatarPoser':

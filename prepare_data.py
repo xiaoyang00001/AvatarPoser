@@ -11,8 +11,8 @@
 import torch
 import numpy as np
 import os
-from human_body_prior.body_model.body_model import BodyModel
-from human_body_prior.tools.rotation_tools import aa2matrot,matrot2aa,local2global_pose
+from utils.body_model_loader import create_body_model
+from utils.rotation_tools import aa2matrot, matrot2aa, local2global_pose
 from utils import utils_transform
 import time
 import pickle
@@ -51,19 +51,20 @@ for dataroot_subset in ["MPI_HDM05", "BioMotionLab_NTroje", "CMU"]:
 
         num_betas = 16 # number of body parameters
         num_dmpls = 8 # number of DMPL parameters
-        bm_male = BodyModel(bm_fname=bm_fname_male, num_betas=num_betas, num_dmpls=num_dmpls, dmpl_fname=dmpl_fname_male)#.to(comp_device)
-        bm_female = BodyModel(bm_fname=bm_fname_female, num_betas=num_betas, num_dmpls=num_dmpls, dmpl_fname=dmpl_fname_female)
+        bm_male = create_body_model(bm_fname_male, dmpl_fname_male, num_betas=num_betas, num_dmpls=num_dmpls)#.to(comp_device)
+        bm_female = create_body_model(bm_fname_female, dmpl_fname_female, num_betas=num_betas, num_dmpls=num_dmpls)
 
         idx = 0
         for filepath in filepaths:
             data = dict()
-            bdata = np.load(filepath,allow_pickle=True)
+            source_path = filepath if os.path.isabs(filepath) else os.path.join(dataroot_amass, filepath)
+            bdata = np.load(source_path,allow_pickle=True)
             # print(list(bdata.keys())) ### check keys of body data: ['trans', 'gender', 'mocap_framerate', 'betas', 'dmpls', 'poses']
             try:
                 framerate = bdata["mocap_framerate"]
                 print("framerate is {}".format(framerate))
             except:
-                print(filepath)
+                print(source_path)
                 print(list(bdata.keys()))       
                 continue                          # skip shape.npz
         #        pass
@@ -149,7 +150,7 @@ for dataroot_subset in ["MPI_HDM05", "BioMotionLab_NTroje", "CMU"]:
 
             data['gender'] = subject_gender
 
-            data['filepath'] = filepath
+            data['filepath'] = source_path
 
 
             with open(os.path.join(savedir,'{}.pkl'.format(idx)), 'wb') as f:

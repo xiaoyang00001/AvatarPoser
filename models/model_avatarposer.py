@@ -20,12 +20,24 @@ from models.model_base import ModelBase
 from models.loss import CharbonnierLoss
 
 from utils.utils_regularizers import regularizer_orth, regularizer_clip
-from human_body_prior.tools.angle_continuous_repres import geodesic_loss_R
 from IPython import embed
 from utils.utils_transform import bgs
 from utils import utils_transform
-from utils import utils_visualize as vis
-from human_body_prior.tools.rotation_tools import aa2matrot,local2global_pose,matrot2aa
+from utils.rotation_tools import aa2matrot, local2global_pose, matrot2aa
+
+
+def geodesic_loss_R(reduction='mean'):
+    def loss(input_R, target_R):
+        rel_R = torch.matmul(input_R.transpose(-1, -2), target_R)
+        trace = rel_R[..., 0, 0] + rel_R[..., 1, 1] + rel_R[..., 2, 2]
+        angle = torch.acos(((trace - 1.0) * 0.5).clamp(-1.0 + 1e-7, 1.0 - 1e-7))
+        if reduction == 'sum':
+            return angle.sum()
+        if reduction == 'none':
+            return angle
+        return angle.mean()
+
+    return loss
 
 
 
@@ -289,8 +301,9 @@ class ModelAvatarPoser(ModelBase):
             # Calculate global translation
 
             T_head2world = self.Head_trans_global.clone()
-            T_head2root_pred = torch.eye(4).repeat(T_head2world.shape[0],1,1).cuda()
-            rotation_local_matrot = aa2matrot(torch.cat([torch.zeros([predicted_angle.shape[0],3]).cuda(),predicted_angle[...,3:66]],dim=1).reshape(-1,3)).reshape(predicted_angle.shape[0],-1,9)
+            T_head2root_pred = torch.eye(4, device=self.device, dtype=T_head2world.dtype).repeat(T_head2world.shape[0],1,1)
+            zeros_root = torch.zeros([predicted_angle.shape[0],3], device=self.device, dtype=predicted_angle.dtype)
+            rotation_local_matrot = aa2matrot(torch.cat([zeros_root,predicted_angle[...,3:66]],dim=1).reshape(-1,3)).reshape(predicted_angle.shape[0],-1,9)
             rotation_global_matrot = local2global_pose(rotation_local_matrot, self.bm.kintree_table[0][:22].long())
             head2root_rotation = rotation_global_matrot[:,15,:]
 
@@ -307,7 +320,7 @@ class ModelAvatarPoser(ModelBase):
             body_pose_local=self.bm(**{'pose_body':predicted_angle[...,3:66], 'root_orient':predicted_angle[...,:3]})
             position_global_full_local = body_pose_local.Jtr[:,:22,:]
             t_head2root = position_global_full_local[:,15,:]
-            t_root2world = -t_head2root+t_head2world.cuda()
+            t_root2world = -t_head2root+t_head2world.to(self.device)
 
             self.predicted_body=self.bm(**{'pose_body':predicted_angle[...,3:66], 'root_orient':predicted_angle[...,:3], 'trans': t_root2world}) 
             # No stabilizer: 'root_orient':rotation_root2world_pred.cuda()
@@ -321,7 +334,7 @@ class ModelAvatarPoser(ModelBase):
             body_parms = self.P
 
             for k,v in body_parms.items():
-                body_parms[k] = v.squeeze().cuda()
+                body_parms[k] = v.squeeze().to(self.device)
                 body_parms[k] = body_parms[k][-predicted_angle.shape[0]:,...]
 
 

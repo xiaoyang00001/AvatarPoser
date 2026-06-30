@@ -9,7 +9,7 @@ class ModelBase():
     def __init__(self, opt):
         self.opt = opt                         # opt
         self.save_dir = opt['path']['models']  # save models
-        self.device = torch.device('cuda' if opt['gpu_ids'] is not None else 'cpu')
+        self.device = torch.device('cuda' if opt['gpu_ids'] and torch.cuda.is_available() else 'cpu')
 #        self.device = torch.device('cpu')
         self.is_train = opt['is_train']        # training or not
         self.schedulers = []                   # schedulers
@@ -159,12 +159,21 @@ class ModelBase():
     def load_network(self, load_path, network, strict=True, param_key='params'):
         network = self.get_bare_model(network)
         if strict:
-            state_dict = torch.load(load_path)
+            state_dict = torch.load(load_path, map_location=self.device)
             if param_key in state_dict.keys():
                 state_dict = state_dict[param_key]
-            network.load_state_dict(state_dict, strict=strict)
+            load_result = network.load_state_dict(state_dict, strict=False)
+            missing_keys = list(load_result.missing_keys)
+            unexpected_keys = list(load_result.unexpected_keys)
+            invalid_missing_keys = [key for key in missing_keys if not key.startswith('body_model')]
+            if invalid_missing_keys or unexpected_keys:
+                raise RuntimeError(
+                    'Error(s) in loading state_dict for {}:\n\tMissing key(s): {}\n\tUnexpected key(s): {}'.format(
+                        network.__class__.__name__, invalid_missing_keys, unexpected_keys
+                    )
+                )
         else:
-            state_dict_old = torch.load(load_path)
+            state_dict_old = torch.load(load_path, map_location=self.device)
             if param_key in state_dict_old.keys():
                 state_dict_old = state_dict_old[param_key]
             state_dict = network.state_dict()

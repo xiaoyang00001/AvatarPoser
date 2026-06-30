@@ -1,5 +1,9 @@
 support_data/body_models
+support_data/_archives
 results
+.conda
+amass
 *.pkl
 *fps60
 **/__pycache__
+.chrome-amass*

@@ -11,8 +11,7 @@
 
 import numpy as np
 from torch.nn import functional as F
-from human_body_prior.tools import tgm_conversion as tgm
-from human_body_prior.tools.rotation_tools import aa2matrot,local2global_pose,matrot2aa
+from utils.rotation_tools import aa2matrot, local2global_pose, matrot2aa
 
 import torch
 
@@ -52,7 +51,7 @@ def sixd2matrot(pose_6d):
     '''
     rot_vec_1 = pose_6d[:,:3]
     rot_vec_2 = pose_6d[:,3:6]
-    rot_vec_3 = torch.cross(rot_vec_1, rot_vec_2)
+    rot_vec_3 = torch.cross(rot_vec_1, rot_vec_2, dim=1)
     pose_matrot = torch.stack([rot_vec_1,rot_vec_2,rot_vec_3],dim=-1)
     return pose_matrot
 
@@ -75,14 +74,19 @@ def sixd2quat(pose_6d):
     :param pose_6d: Nx6
     :return: pose_quaternion: Nx4
     '''
-    pose_mat = sixd2matrot(pose_6d)
-    pose_mat_34 = torch.cat((pose_mat, torch.zeros(pose_mat.size(0), pose_mat.size(1), 1)), dim=-1)
-    pose_quaternion = tgm.rotation_matrix_to_quaternion(pose_mat_34)
-    return pose_quaternion
+    pose_aa = sixd2aa(pose_6d)
+    angle = torch.linalg.norm(pose_aa, dim=1, keepdim=True)
+    axis = pose_aa / angle.clamp_min(1e-8)
+    half_angle = angle * 0.5
+    quat = torch.cat([torch.cos(half_angle), axis * torch.sin(half_angle)], dim=1)
+    return quat
 
 def quat2aa(pose_quat):
     '''
     :param pose_quat: Nx4
     :return: pose_aa: Nx3
     '''
-    return tgm.quaternion_to_angle_axis(pose_quat)
+    quat = F.normalize(pose_quat, p=2, dim=1)
+    angle = 2.0 * torch.atan2(torch.linalg.norm(quat[:, 1:], dim=1), quat[:, 0])
+    axis = quat[:, 1:] / torch.sin(angle * 0.5).unsqueeze(1).clamp_min(1e-8)
+    return axis * angle.unsqueeze(1)

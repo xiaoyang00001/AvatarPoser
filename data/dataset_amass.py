@@ -16,7 +16,7 @@ import time
 from torch.utils.data import Dataset, DataLoader
 from human_body_prior.body_model.body_model import BodyModel
 from human_body_prior.tools.omni_tools import copy2cpu as c2c
-from human_body_prior.tools.rotation_tools import aa2matrot,matrot2aa,local2global_pose
+from utils.rotation_tools import aa2matrot, matrot2aa, local2global_pose
 import random
 import glob
 from IPython import embed
@@ -49,8 +49,7 @@ class AMASS_Dataset(Dataset):
 
     def __len__(self):
 
-        return max(len(self.filename_list), self.batch_size)
-
+        return len(self.filename_list)
 
     def __getitem__(self, idx):
 
@@ -98,6 +97,3 @@ class AMASS_Dataset(Dataset):
                     'pos_pelvis_gt':body_parms_list['trans'][2:],
                     'vel_pelvis_gt':body_parms_list['trans'][2:]-body_parms_list['trans'][1:-1]
                     }
-
-
-    

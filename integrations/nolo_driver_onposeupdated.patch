@@ -1,0 +1,38 @@
+diff --git a/NOLO_Link_Driver/NHmdServerDriver.cpp b/NOLO_Link_Driver/NHmdServerDriver.cpp
+--- a/NOLO_Link_Driver/NHmdServerDriver.cpp
++++ b/NOLO_Link_Driver/NHmdServerDriver.cpp
+@@ -2,6 +2,7 @@
+ #include "Utils.h"
+ #include "Settings.h"
+ #include "nolo-link-encoder.h"
++#include "TrackingInfoUdpBroadcaster.h"
+ 
+ NHmdServerDriver::NHmdServerDriver(DeviceInfo info):m_deviceInfo(info)
+ {
+@@ -284,6 +285,7 @@ void NHmdServerDriver::OnPoseUpdated()
+ 	if (m_unObjectId != vr::k_unTrackedDeviceIndexInvalid)
+ 	{
+ 		nolo_link_encoder::getInstance()->GetTrackingInfo(m_TrackingInfo);
++		TrackingInfoUdpBroadcaster::Instance().Broadcast(m_TrackingInfo);
+ 		//Log("OnPoseUpdated:%0.6f|%0.6f|%0.6f|%0.6f", info.HeadPose_Pose_Orientation.w, info.HeadPose_Pose_Orientation.x, info.HeadPose_Pose_Orientation.y, info.HeadPose_Pose_Orientation.z);
+ 		ReportData(m_TrackingInfo);
+ 
+diff --git a/NOLO_Link_Driver/NOLO_Link_Driver.vcxproj b/NOLO_Link_Driver/NOLO_Link_Driver.vcxproj
+--- a/NOLO_Link_Driver/NOLO_Link_Driver.vcxproj
++++ b/NOLO_Link_Driver/NOLO_Link_Driver.vcxproj
+@@ -187,6 +187,7 @@
+     <ClInclude Include="RenderUtils.h" />
+     <ClInclude Include="resource.h" />
+     <ClInclude Include="Settings.h" />
++    <ClInclude Include="TrackingInfoUdpBroadcaster.h" />
+     <ClInclude Include="Utils.h" />
+     <ClInclude Include="VSyncThread.h" />
+   </ItemGroup>
+@@ -212,6 +213,7 @@
+     <ClCompile Include="RenderPipeline.cpp" />
+     <ClCompile Include="RenderUtils.cpp" />
+     <ClCompile Include="Settings.cpp" />
++    <ClCompile Include="TrackingInfoUdpBroadcaster.cpp" />
+     <ClCompile Include="VSyncThread.cpp" />
+   </ItemGroup>
+   <ItemGroup>

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "units": "meters",
+  "offset_frame": "device_local_after_coordinate_transform",
+  "devices": {
+    "head": {
+      "source": "NOLO HMD pose -> AvatarPoser training head joint pose",
+      "position_offset": [0.0, 0.0, 0.0],
+      "rotation_offset_deg": [0.0, 0.0, 0.0]
+    },
+    "left_hand": {
+      "source": "NOLO left controller pose -> AvatarPoser training left_wrist joint pose",
+      "position_offset": [0.0, 0.0, 0.0],
+      "rotation_offset_deg": [0.0, 0.0, 0.0]
+    },
+    "right_hand": {
+      "source": "NOLO right controller pose -> AvatarPoser training right_wrist joint pose",
+      "position_offset": [0.0, 0.0, 0.0],
+      "rotation_offset_deg": [0.0, 0.0, 0.0]
+    }
+  }
+}

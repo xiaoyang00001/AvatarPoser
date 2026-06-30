@@ -4,6 +4,10 @@ from datetime import datetime
 import json
 import re
 import glob
+try:
+    import torch
+except ImportError:
+    torch = None
 
 
 '''
@@ -88,6 +92,8 @@ def parse(opt_path, is_train=True):
     # ----------------------------------------
     # GPU devices
     # ----------------------------------------
+    if torch is not None and not torch.cuda.is_available():
+        opt['gpu_ids'] = []
     gpu_list = ','.join(str(x) for x in opt['gpu_ids'])
     os.environ['CUDA_VISIBLE_DEVICES'] = gpu_list
     print('export CUDA_VISIBLE_DEVICES=' + gpu_list)

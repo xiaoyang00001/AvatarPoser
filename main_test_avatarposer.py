@@ -19,7 +19,6 @@ from utils import utils_logger
 from utils import utils_option as option
 from data.select_dataset import define_Dataset
 from models.select_model import define_Model
-from utils import utils_visualize as vis
 
 save_animation = False
 resolution = (800,800)
@@ -89,6 +88,11 @@ def main(json_path='options/test_avatarposer.json'):
 
         if phase == 'test':
             test_set = define_Dataset(dataset_opt)
+            if len(test_set) == 0:
+                raise RuntimeError(
+                    "No preprocessed test data found. Run prepare_data.py after placing AMASS data under "
+                    "the amass/ directory, or update datasets.test.dataroot in the option file."
+                )
             test_loader = DataLoader(test_set, batch_size=dataset_opt['dataloader_batch_size'],
                                      shuffle=False, num_workers=1,
                                      drop_last=False, pin_memory=True)
@@ -135,6 +139,8 @@ def main(json_path='options/test_avatarposer.json'):
 
 
         if index in [0, 10, 20] and save_animation:
+            from utils import utils_visualize as vis
+
             video_dir = os.path.join(opt['path']['images'], str(index))
             if not os.path.exists(video_dir):
                 os.makedirs(video_dir)
